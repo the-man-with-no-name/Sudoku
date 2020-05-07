@@ -1,3 +1,7 @@
+# Add Reset Button
+# Add Win Function
+# Organize in Functions better
+
 import pygame
 import pygame.locals as pl
 import numpy
@@ -24,6 +28,7 @@ def borders(screen):
 
     pygame.draw.line(screen, pygame.Color(255,255,255), (left+3*shift,top), (left+3*shift,top+total),4)
     pygame.draw.line(screen, pygame.Color(255,255,255), (left+6*shift,top), (left+6*shift,top+total),4)
+
 
 def initialboard(difficulty=1):
     if difficulty == 1:
@@ -72,24 +77,19 @@ class InputBox:
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
-            # If the user clicked on the input_box rect.
             if self.rect.collidepoint(event.pos):
-                # Toggle the active variable.
                 self.active = not self.active
             else:
                 self.active = False
-            # Change the current color of the input box.
             self.color = COLOR_ACTIVE if self.active else COLOR_INACTIVE
         if event.type == pygame.KEYDOWN:
             if self.active:
                 if event.key == pygame.K_RETURN:
                     print(self.text)
-                    #self.text = ''
                 elif event.key == pygame.K_BACKSPACE:
                     self.text = self.text[:-1]
                 elif len(self.text) < self.max_string_length or self.max_string_length == -1:
                     self.text += event.unicode
-                # Re-render the text.
                 self.txt_surface = FONT.render(self.text, True, self.color)
                 if(self.text == ''):
                     self.value = 0
@@ -98,14 +98,12 @@ class InputBox:
 
     def update(self):
         # Resize the box if the text is too long.
-        width = max(32, self.txt_surface.get_width()+10)
-        self.rect.w = width
+        #width = max(32, self.txt_surface.get_width()+10)
+        #self.rect.w = width
         return (self.board_coordinates,self.value)
 
     def draw(self, screen):
-        # Blit the text.
         screen.blit(self.txt_surface, (self.rect.x+6, self.rect.y-2))
-        # Blit the rect.
         pygame.draw.rect(screen, self.color, self.rect, 2)
 
 
@@ -127,9 +125,7 @@ class TextBox:
         self.txt_surface = FONT.render(self.text, True, self.color)
 
     def draw(self, screen):
-        # Blit the text.
         screen.blit(self.txt_surface, (self.rect.x+6, self.rect.y))
-        # Blit the rect.
         pygame.draw.rect(screen, self.color, self.rect, 2)
 
 
@@ -146,18 +142,13 @@ class NumBox:
         screen.blit(self.txt_surface, (self.rect.x+6, self.rect.y-2))
 
     def draw(self, screen):
-        # Blit the text.
         screen.blit(self.txt_surface, (self.rect.x+6, self.rect.y-2))
-        # Blit the rect.
         pygame.draw.rect(screen, self.color, self.rect, 2)
 
 # Create input boxes
 top = 48
 left = 86
 y = 32
-# input_box1 = InputBox(100, 100, 32, 32)
-# input_box2 = InputBox(100, 200, 32, 32)
-# input_boxes = [input_box1, input_box2]
 init_board = initialboard()
 
 number_boxes = []
