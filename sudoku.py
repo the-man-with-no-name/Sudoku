@@ -1,6 +1,7 @@
 # Add Reset Button
 # Add Win Function
 # Organize in Functions better
+# Add checker to see if input is a number / if not, display a message and set text = ''
 
 import pygame
 import pygame.locals as pl
@@ -11,23 +12,51 @@ sq_dim = 480
 screen = pygame.display.set_mode((sq_dim,sq_dim))
 COLOR_INACTIVE = pygame.Color(156,156,156)
 COLOR_ACTIVE = pygame.Color(255,255,255)
+COLOR_TAKEN = pygame.Color(255,89,89)
+ALLOWED = ['1','2','3','4','5','6','7','8','9']
 FONT = pygame.font.Font("Roboto-Medium.ttf", 32)
-board = numpy.zeros((9,9),dtype=int)
+board = numpy.zeros((9,9),dtype=int) # Current Board / 0 indicates empty box
+Taken = numpy.zeros((9,9),dtype=bool) # Indicates whether the number in this box has already been taken
+number_boxes = []
+taken_positions = []
+input_boxes = []
 
+
+def create_board():
+    top = 48
+    left = 86
+    y = 32
+    init_board = initialboard()
+
+    for position in init_board:
+        pos = position[0]
+        taken_positions.append(pos)
+        num = position[1]
+        number_boxes.append(NumBox(left+pos[0]*(y+1),top+pos[1]*(y+1),y,y,board_coordinates=(pos[0],pos[1]),value=num,text=str(num)))
+        board[pos[0],pos[1]] = num
+
+    for i in range(9):
+        for j in range(9):
+            if (i,j) not in taken_positions:
+                input_boxes.append(InputBox(left+i*(y+1),top+j*(y+1),y,y,board_coordinates=(i,j)))
 
 def borders(screen):
-    shift = 33
+    shift = 32
     total = 296
-    pygame.draw.line(screen, pygame.Color(255,255,255), (left,top), (left+total,top),4)
-    pygame.draw.line(screen, pygame.Color(255,255,255), (left,top), (left,top+total),4)
-    pygame.draw.line(screen, pygame.Color(255,255,255), (left+total,top), (left+total,top+total),4)
-    pygame.draw.line(screen, pygame.Color(255,255,255), (left,top+total), (left+total,top+total),4)
+    for i in range(9):
+        pygame.draw.line(screen, COLOR_INACTIVE, (left,top+i*(shift+1)-1), (left+total,top+i*(shift+1)-1),4)
 
-    pygame.draw.line(screen, pygame.Color(255,255,255), (left,top+3*shift), (left+total,top+3*shift),4)
-    pygame.draw.line(screen, pygame.Color(255,255,255), (left,top+6*shift), (left+total,top+6*shift),4)
+    pygame.draw.line(screen, COLOR_ACTIVE, (left,top), (left+total+2,top),4)
+    pygame.draw.line(screen, COLOR_ACTIVE, (left,top), (left,top+total+2),4)
+    pygame.draw.line(screen, COLOR_ACTIVE, (left+total,top), (left+total,top+total+2),4)
+    pygame.draw.line(screen, COLOR_ACTIVE, (left,top+total), (left+total,top+total),4)
 
-    pygame.draw.line(screen, pygame.Color(255,255,255), (left+3*shift,top), (left+3*shift,top+total),4)
-    pygame.draw.line(screen, pygame.Color(255,255,255), (left+6*shift,top), (left+6*shift,top+total),4)
+    pygame.draw.line(screen, COLOR_ACTIVE, (left,top+3*(shift+1)-1), (left+total,top+3*(shift+1)-1),4)
+    pygame.draw.line(screen, COLOR_ACTIVE, (left,top+6*(shift+1)-1), (left+total,top+6*(shift+1)-1),4)
+
+    pygame.draw.line(screen, COLOR_ACTIVE, (left+3*(shift+1)-1,top), (left+3*(shift+1)-1,top+total),4)
+    pygame.draw.line(screen, COLOR_ACTIVE, (left+6*(shift+1)-1,top), (left+6*(shift+1)-1,top+total),4)
+
 
 
 def initialboard(difficulty=1):
@@ -44,7 +73,7 @@ def initialboard(difficulty=1):
     return easy_1
 
 
-def isTaken(coord,num):
+def isTaken(coord: tuple, num: int):
     for i in range(9):
         if board.item(i,coord[1]) == num and coord[0] != i and num != 0:
             return True
@@ -62,7 +91,7 @@ def isTaken(coord,num):
 
 class InputBox:
 
-    def __init__(self, x, y, w, h, text='',cursor_visible=True,max_string_length=1,board_coordinates=(0,0)):
+    def __init__(self, x, y, w, h, text='', cursor_visible=True, max_string_length=1, board_coordinates=(0,0)):
         self.rect = pygame.Rect(x, y, w, h)
         self.color = COLOR_INACTIVE
         self.text = text
@@ -90,17 +119,23 @@ class InputBox:
                     self.text = self.text[:-1]
                 elif len(self.text) < self.max_string_length or self.max_string_length == -1:
                     self.text += event.unicode
-                self.txt_surface = FONT.render(self.text, True, self.color)
                 if(self.text == ''):
                     self.value = 0
-                else:
+                elif(self.text in ALLOWED):
                     self.value = int(self.text)
+                else:
+                    self.text = ''
+                    self.value = 0
+                self.txt_surface = FONT.render(self.text, True, self.color)
 
-    def update(self):
-        # Resize the box if the text is too long.
-        #width = max(32, self.txt_surface.get_width()+10)
-        #self.rect.w = width
+    def get_attr(self):
         return (self.board_coordinates,self.value)
+
+    # def update(self,taken):
+    #     if taken:
+    #         self.color = COLOR_TAKEN
+    #     else:
+    #         self.color = COLOR_INACTIVE
 
     def draw(self, screen):
         screen.blit(self.txt_surface, (self.rect.x+6, self.rect.y-2))
@@ -117,11 +152,11 @@ class TextBox:
         self.txt_surface = FONT.render(text, True, self.color)
         screen.blit(self.txt_surface, (self.rect.x+6, self.rect.y-2))
 
-    def update(self,hint):
+    def update(self,hint: bool):
         if hint:
             self.text="Try again"
         else:
-            self.text="GO!"
+            self.text="Go!"
         self.txt_surface = FONT.render(self.text, True, self.color)
 
     def draw(self, screen):
@@ -148,30 +183,13 @@ class NumBox:
 # Create input boxes
 top = 48
 left = 86
-y = 32
-init_board = initialboard()
-
-number_boxes = []
-taken_positions = []
-for position in init_board:
-    pos = position[0]
-    taken_positions.append(pos)
-    num = position[1]
-    number_boxes.append(NumBox(left+pos[0]*(y+1),top+pos[1]*(y+1),y,y,board_coordinates=(pos[0],pos[1]),value=num,text=str(num)))
-    board[pos[0],pos[1]] = num
-
-input_boxes = []
-for i in range(9):
-    for j in range(9):
-        if (i,j) not in taken_positions:
-            input_boxes.append(InputBox(left+i*(y+1),top+j*(y+1),y,y,board_coordinates=(i,j)))
-#[InputBox(left+i*y,top+j*y,y,y) for i in range(10) for j in range(10)]
+# y = 32
+create_board()
 resetbox1 = TextBox(left+170,top+350,130,40,text='Reset')
 hintbox1 = TextBox(left,top+350,150,40,text='GO!')
 
 
 # Run until user asks to quit
-Taken = numpy.zeros((9,9),dtype=bool)
 running = True 
 while running:
 
@@ -183,12 +201,14 @@ while running:
             box.handle_event(event)
 
     for box in input_boxes:
-        (coord,number) = box.update()
+        (coord,number) = box.get_attr()
         board[coord[0],coord[1]] = number
-        if isTaken(coord,number):
+        toggle = isTaken(coord,number)
+        if toggle:
             Taken[coord[0],coord[1]] = True
         else:
             Taken[coord[0],coord[1]] = False
+        #box.update(toggle)
 
     screen.fill((0, 0, 0))
     for numbox in number_boxes:
