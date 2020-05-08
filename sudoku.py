@@ -5,7 +5,6 @@
 # Add Score Option
 
 import pygame
-import pygame.locals as pl
 import numpy
 pygame.init()
 
@@ -47,7 +46,7 @@ def borders(screen):
     for i in range(9):
         pygame.draw.line(screen, COLOR_INACTIVE, (left,top+i*(shift+1)-1), (left+total,top+i*(shift+1)-1),4)
 
-    pygame.draw.line(screen, COLOR_ACTIVE, (left,top), (left+total+2,top),4)
+    pygame.draw.line(screen, COLOR_ACTIVE, (left-1,top-1), (left+total+2,top-1),4)
     pygame.draw.line(screen, COLOR_ACTIVE, (left,top), (left,top+total+2),4)
     pygame.draw.line(screen, COLOR_ACTIVE, (left+total,top), (left+total,top+total+2),4)
     pygame.draw.line(screen, COLOR_ACTIVE, (left,top+total), (left+total,top+total),4)
@@ -73,7 +72,7 @@ def win():
             if not numpy.array_equal(numpy.array(box_xy),comp):
                 return False
     return True
-    
+
 
 def initialboard(difficulty=1):
     if difficulty == 1:
@@ -157,51 +156,6 @@ class InputBox:
         screen.blit(self.txt_surface, (self.rect.x+6, self.rect.y-2))
         pygame.draw.rect(screen, self.color, self.rect, 2)
 
-
-class TextBox:
-
-    def __init__(self, x, y, w, h, text=''):
-        self.rect = pygame.Rect(x, y, w, h)
-        self.text = text
-        self.color = COLOR_ACTIVE
-        self.hint = 0
-        self.txt_surface = FONT.render(text, True, self.color)
-        screen.blit(self.txt_surface, (self.rect.x+6, self.rect.y-2))
-
-    def update(self,hint: bool):
-        if hint:
-            self.text="Try again"
-        else:
-            self.text="Go!"
-        self.txt_surface = FONT.render(self.text, True, self.color)
-
-    def draw(self, screen):
-        screen.blit(self.txt_surface, (self.rect.x+6, self.rect.y))
-        pygame.draw.rect(screen, self.color, self.rect, 2)
-
-
-class WinBox:
-
-    def __init__(self, x, y, w, h, text=''):
-        self.rect = pygame.Rect(x, y, w, h)
-        self.text = text
-        self.color = COLOR_ACTIVE
-        self.hint = 0
-        self.txt_surface = FONT.render(text, True, self.color)
-        screen.blit(self.txt_surface, (self.rect.x+6, self.rect.y-2))
-
-    def update(self):
-        if win():
-            self.text="You Win!"
-        else:
-            self.text="Not done"
-        self.txt_surface = FONT.render(self.text, True, self.color)
-
-    def draw(self, screen):
-        screen.blit(self.txt_surface, (self.rect.x+6, self.rect.y))
-        pygame.draw.rect(screen, self.color, self.rect, 2)
-
-
 class NumBox:
 
     def __init__(self, x, y, w, h, text='', value=0, board_coordinates=(0,0)):
@@ -217,6 +171,53 @@ class NumBox:
     def draw(self, screen):
         screen.blit(self.txt_surface, (self.rect.x+6, self.rect.y-2))
         pygame.draw.rect(screen, self.color, self.rect, 2)
+
+
+class MessageBox:
+
+    def __init__(self, x, y, w, h, text):
+        self.rect = pygame.Rect(x, y, w, h)
+        self.text = text
+        self.color = COLOR_ACTIVE
+        self.hint = 0
+        self.txt_surface = FONT.render(text, True, self.color)
+        screen.blit(self.txt_surface, (self.rect.x+6, self.rect.y-2))
+
+    def __draw__(self, screen):
+        screen.blit(self.txt_surface, (self.rect.x+6, self.rect.y))
+        pygame.draw.rect(screen, self.color, self.rect, 2)
+
+class TextBox(MessageBox):
+
+    def __init__(self, x, y, w, h, text=''):
+        super().__init__(x,y,w,h,text)
+
+    def update(self,hint: bool):
+        if hint:
+            self.text="Try again"
+        else:
+            self.text="Go!"
+        self.txt_surface = FONT.render(self.text, True, self.color)
+
+    def draw(self, screen):
+        super().__draw__(screen)
+
+
+class WinBox(MessageBox):
+
+    def __init__(self, x, y, w, h, text=''):
+        super().__init__(x,y,w,h,text)
+
+    def update(self):
+        if win():
+            self.text="You Win!"
+        else:
+            self.text="Not done"
+        self.txt_surface = FONT.render(self.text, True, self.color)
+
+    def draw(self, screen):
+        super().__draw__(screen)
+
 
 # Create input boxes
 top = 48
