@@ -1,14 +1,30 @@
-# Add Reset Button
-# Add Win Function - DONE
-# Organize in Functions better
-# Add checker to see if input is a number / if not, display a message and set text = '' - DONE
-# Add Score Option
 
+__author__ = "Ryan DeMuse"
+__license__ = "MIT"
+__email__ = "ryan.demuse@du.edu"
+
+"""
+Todo:
+
+Add Reset Button
+Add Win Function - DONE
+Organize in Functions better
+Add checker to see if input is a number / if not, display a message and set text = '' - DONE
+Add Score Option
+Remove Redundant Code & Optimize
+"""
+
+# Modules required
 import pygame
 import numpy
-pygame.init()
+from typing import List
 
+# Initialize global variables
+pygame.init()
 sq_dim = 480
+top = 48
+left = 86
+y = 32
 screen = pygame.display.set_mode((sq_dim,sq_dim))
 COLOR_INACTIVE = pygame.Color(156,156,156)
 COLOR_ACTIVE = pygame.Color(255,255,255)
@@ -21,25 +37,59 @@ number_boxes = []
 taken_positions = []
 input_boxes = []
 
+# Predefined Sudoku game boars
+def initialboard(difficulty: int = 3) -> List:
+    if difficulty == 1:
+        easy_1 = [[(0,0),9],[(0,1),1],
+                    [(1,1),3],[(1,4),9],[(1,5),1],[(1,7),2],
+                    [(2,1),6],[(2,2),5],[(2,3),4],[(2,6),3],[(2,7),7],
+                    [(3,0),1],[(3,2),8],[(3,5),6],[(3,7),9],[(3,8),7],
+                    [(4,3),7],[(4,5),8],
+                    [(5,0),4],[(5,1),7],[(5,3),2],[(5,6),5],[(5,8),8],
+                    [(6,2),6],[(6,3),1],[(6,5),5],[(6,6),9],[(6,7),7],
+                    [(7,1),8],[(7,3),9],[(7,4),7],[(7,7),3],
+                    [(8,7),8],[(8,8),1]]
+    elif difficulty == 2:
+        med_1 = [[(0,0),6],[(0,1),4],[(0,3),9],
+                    [(1,5),1],[(1,6),3],
+                    [(2,8),2],
+                    [(3,1),3],[(3,6),9],[(3,8),6],
+                    [(4,0),1],[(4,6),7],[(4,7),5],
+                    [(5,1),2],[(5,4),8],[(5,5),5],[(5,8),1],
+                    [(6,5),8],
+                    [(7,7),9],[(7,8),7],
+                    [(8,0),2],[(8,1),7],[(8,2),9],[(8,7),6],[(8,8),4]]
+    elif difficulty == 3:
+        hard_1 = [[(0,3),4],
+                    [(1,5),8],[(1,7),9],[(1,8),6],
+                    [(2,4),5],[(2,5),3],[(2,7),8],
+                    [(3,1),4],[(3,2),8],
+                    [(4,0),2],[(4,4),4],[(4,5),9],[(4,8),1],
+                    [(5,0),6],[(5,6),5],[(5,8),9],
+                    [(6,0),4],[(6,3),1],[(6,6),7],
+                    [(7,1),8],[(7,3),9],[(7,6),4],
+                    [(8,1),1],[(8,4),7],[(8,7),2]]
+    else:
+        return easy_1
+    return hard_1
 
+# Create number boxes and user input boxes based on the initial board chosen
 def create_board():
-    top = 48
-    left = 86
-    y = 32
     init_board = initialboard()
 
     for position in init_board:
         pos = position[0]
         taken_positions.append(pos)
         num = position[1]
-        number_boxes.append(NumBox(left+pos[0]*(y+1),top+pos[1]*(y+1),y,y,board_coordinates=(pos[0],pos[1]),value=num,text=str(num)))
+        number_boxes.append(NumBox(left+pos[1]*(y+1),top+pos[0]*(y+1),y,y,board_coordinates=(pos[0],pos[1]),value=num,text=str(num)))
         board[pos[0],pos[1]] = num
 
     for i in range(9):
         for j in range(9):
             if (i,j) not in taken_positions:
-                input_boxes.append(InputBox(left+i*(y+1),top+j*(y+1),y,y,board_coordinates=(i,j)))
+                input_boxes.append(InputBox(left+j*(y+1),top+i*(y+1),y,y,board_coordinates=(i,j)))
 
+# Make the sudoku board look nice with borders and such
 def borders(screen):
     shift = 32
     total = 296
@@ -57,12 +107,17 @@ def borders(screen):
     pygame.draw.line(screen, COLOR_ACTIVE, (left+3*(shift+1)-1,top), (left+3*(shift+1)-1,top+total),4)
     pygame.draw.line(screen, COLOR_ACTIVE, (left+6*(shift+1)-1,top), (left+6*(shift+1)-1,top+total),4)
 
-# Check whether the board is a Latin Square
+
+# Check whether the board has Sudoku Properties
+#   1) Whole Board is Latin Square
+#   2) Each subsquare has a distinct entries
 def win():
     comp = numpy.array(list(range(1,10)))
+    # Latin Square Check
     for i in range(9):
         if not (numpy.array_equal(board[i],comp) and numpy.array_equal(board[:,i],comp)):
             return False
+    # Subsquare Checks
     for offset_x in range(0,7,3):
         for offset_y in range(0,7,3):
             box_xy = []
@@ -73,37 +128,30 @@ def win():
                 return False
     return True
 
-
-def initialboard(difficulty=1):
-    if difficulty == 1:
-        easy_1 = [[(0,0),9],[(0,1),1],
-                    [(1,1),3],[(1,4),9],[(1,5),1],[(1,7),2],
-                    [(2,1),6],[(2,2),5],[(2,3),4],[(2,6),3],[(2,7),7],
-                    [(3,0),1],[(3,2),8],[(3,5),6],[(3,7),9],[(3,8),7],
-                    [(4,3),7],[(4,5),8],
-                    [(5,0),4],[(5,1),7],[(5,3),2],[(5,6),5],[(5,8),8],
-                    [(6,2),6],[(6,3),1],[(6,5),5],[(6,6),9],[(6,7),7],
-                    [(7,1),8],[(7,3),9],[(7,4),7],[(7,7),3],
-                    [(8,7),8],[(8,8),1]]
-    return easy_1
-
-
-def isTaken(coord: tuple, num: int):
-    for i in range(9):
-        if board.item(i,coord[1]) == num and coord[0] != i and num != 0:
-            return True
-    for j in range(9):
-        if board.item(coord[0],j) == num and coord[1] != j and num != 0:
-            return True
-    startx = coord[0]//3
-    starty = coord[1]//3
-    for i in range(startx*3,startx*3+3,1):
-        for j in range(starty*3,starty*3+3,1):
-            if board.item(i,j) == num and coord[0] != i and coord[1] != j and num != 0:
+# Is this a valid number placement, i.e., does it maintain the Latin Square
+#   property and the subsquare property?
+def isTaken(coord: tuple, num: int) -> bool:
+    # 0's are default values, do not check them
+    if num != 0:
+        # Latin Square rows
+        for i in range(9):
+            if board.item(i,coord[1]) == num and coord[0] != i:
                 return True
+        # Latin Square columns
+        for j in range(9):
+            if board.item(coord[0],j) == num and coord[1] != j:
+                return True
+        startx = coord[0]//3
+        starty = coord[1]//3
+        # Subsquare property?
+        for i in range(startx*3,startx*3+3,1):
+            for j in range(starty*3,starty*3+3,1):
+                if board.item(i,j) == num and coord[0] != i and coord[1] != j:
+                    return True
     return False
 
 
+# Class defining user input boxes
 class InputBox:
 
     def __init__(self, x, y, w, h, text='', cursor_visible=True, max_string_length=1, board_coordinates=(0,0)):
@@ -156,6 +204,7 @@ class InputBox:
         screen.blit(self.txt_surface, (self.rect.x+6, self.rect.y-2))
         pygame.draw.rect(screen, self.color, self.rect, 2)
 
+# Number boxes from predefined board, not user interactive.
 class NumBox:
 
     def __init__(self, x, y, w, h, text='', value=0, board_coordinates=(0,0)):
@@ -172,7 +221,7 @@ class NumBox:
         screen.blit(self.txt_surface, (self.rect.x+6, self.rect.y-2))
         pygame.draw.rect(screen, self.color, self.rect, 2)
 
-
+# Messages to inform player
 class MessageBox:
 
     def __init__(self, x, y, w, h, text):
@@ -187,6 +236,7 @@ class MessageBox:
         screen.blit(self.txt_surface, (self.rect.x+6, self.rect.y))
         pygame.draw.rect(screen, self.color, self.rect, 2)
 
+# Message to indicate whether the move just made was valid
 class TextBox(MessageBox):
 
     def __init__(self, x, y, w, h, text=''):
@@ -202,7 +252,7 @@ class TextBox(MessageBox):
     def draw(self, screen):
         super().__draw__(screen)
 
-
+# Message to indicate whether the board is properly completed
 class WinBox(MessageBox):
 
     def __init__(self, x, y, w, h, text=''):
@@ -219,55 +269,58 @@ class WinBox(MessageBox):
         super().__draw__(screen)
 
 
-# Create input boxes
-top = 48
-left = 86
-# y = 32
-create_board()
-resetbox1 = WinBox(left,top+310,150,40,text='Not done')
-hintbox1 = TextBox(left,top+360,150,40,text='GO!')
+def main():
+    create_board()
+    resetbox1 = WinBox(left,top+310,150,40,text='Not done')
+    hintbox1 = TextBox(left,top+360,150,40,text='GO!')
 
+    # Run until user asks to quit
+    running = True 
+    while running:
 
-# Run until user asks to quit
-running = True 
-while running:
+        # Did user click window close button?
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            for box in input_boxes:
+                box.handle_event(event)
 
-    # Did user click window close button?
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+        # Check whether moves were valid
         for box in input_boxes:
-            box.handle_event(event)
+            (coord,number) = box.get_attr()
+            board[coord[0],coord[1]] = number
+            toggle = isTaken(coord,number)
+            if toggle:
+                Taken[coord[0],coord[1]] = True
+            else:
+                Taken[coord[0],coord[1]] = False
 
-    for box in input_boxes:
-        (coord,number) = box.get_attr()
-        board[coord[0],coord[1]] = number
-        toggle = isTaken(coord,number)
-        if toggle:
-            Taken[coord[0],coord[1]] = True
-        else:
-            Taken[coord[0],coord[1]] = False
-        #box.update(toggle)
+        # Draw the number the user inputed
+        screen.fill((0, 0, 0))
+        for numbox in number_boxes:
+            numbox.draw(screen)
+        for box in input_boxes:
+            box.draw(screen)
 
-    screen.fill((0, 0, 0))
-    for numbox in number_boxes:
-        numbox.draw(screen)
-    for box in input_boxes:
-        box.draw(screen)
+        # Are there any invalid moves on the board?
+        Hint = False
+        for i in range(9):
+            for j in range(9):
+                Hint = Hint or Taken.item(i,j)
 
-    Hint = False
-    for i in range(9):
-        for j in range(9):
-            Hint = Hint or Taken.item(i,j)
+        # Indicate to user whether the move was invalid
+        hintbox1.update(Hint)
+        hintbox1.draw(screen)
 
-    hintbox1.update(Hint)
-    hintbox1.draw(screen)
+        # Indicate to user whether game is finished
+        resetbox1.update()
+        resetbox1.draw(screen)
 
-    resetbox1.update()
-    resetbox1.draw(screen)
+        borders(screen)
 
-    borders(screen)
+        pygame.display.flip()
 
-    pygame.display.flip()
 
-pygame.quit()
+if __name__ == '__main__':
+    main()
+    pygame.quit()
