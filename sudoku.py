@@ -1,7 +1,8 @@
 # Add Reset Button
-# Add Win Function
+# Add Win Function - DONE
 # Organize in Functions better
-# Add checker to see if input is a number / if not, display a message and set text = ''
+# Add checker to see if input is a number / if not, display a message and set text = '' - DONE
+# Add Score Option
 
 import pygame
 import pygame.locals as pl
@@ -57,7 +58,22 @@ def borders(screen):
     pygame.draw.line(screen, COLOR_ACTIVE, (left+3*(shift+1)-1,top), (left+3*(shift+1)-1,top+total),4)
     pygame.draw.line(screen, COLOR_ACTIVE, (left+6*(shift+1)-1,top), (left+6*(shift+1)-1,top+total),4)
 
-
+# Check whether the board is a Latin Square
+def win():
+    comp = numpy.array(list(range(1,10)))
+    for i in range(9):
+        if not (numpy.array_equal(board[i],comp) and numpy.array_equal(board[:,i],comp)):
+            return False
+    for offset_x in range(0,7,3):
+        for offset_y in range(0,7,3):
+            box_xy = []
+            for smallbox_x in range(3):
+                for smallbox_y in range(3):
+                    box_xy.append(board.item(offset_x+smallbox_x,offset_y+smallbox_y))
+            if not numpy.array_equal(numpy.array(box_xy),comp):
+                return False
+    return True
+    
 
 def initialboard(difficulty=1):
     if difficulty == 1:
@@ -164,6 +180,28 @@ class TextBox:
         pygame.draw.rect(screen, self.color, self.rect, 2)
 
 
+class WinBox:
+
+    def __init__(self, x, y, w, h, text=''):
+        self.rect = pygame.Rect(x, y, w, h)
+        self.text = text
+        self.color = COLOR_ACTIVE
+        self.hint = 0
+        self.txt_surface = FONT.render(text, True, self.color)
+        screen.blit(self.txt_surface, (self.rect.x+6, self.rect.y-2))
+
+    def update(self):
+        if win():
+            self.text="You Win!"
+        else:
+            self.text="Not done"
+        self.txt_surface = FONT.render(self.text, True, self.color)
+
+    def draw(self, screen):
+        screen.blit(self.txt_surface, (self.rect.x+6, self.rect.y))
+        pygame.draw.rect(screen, self.color, self.rect, 2)
+
+
 class NumBox:
 
     def __init__(self, x, y, w, h, text='', value=0, board_coordinates=(0,0)):
@@ -185,8 +223,8 @@ top = 48
 left = 86
 # y = 32
 create_board()
-resetbox1 = TextBox(left+170,top+350,130,40,text='Reset')
-hintbox1 = TextBox(left,top+350,150,40,text='GO!')
+resetbox1 = WinBox(left,top+310,150,40,text='Not done')
+hintbox1 = TextBox(left,top+360,150,40,text='GO!')
 
 
 # Run until user asks to quit
@@ -224,6 +262,7 @@ while running:
     hintbox1.update(Hint)
     hintbox1.draw(screen)
 
+    resetbox1.update()
     resetbox1.draw(screen)
 
     borders(screen)
