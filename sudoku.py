@@ -1,10 +1,13 @@
-
 __author__ = "Ryan DeMuse"
 __license__ = "MIT"
 __email__ = "ryan.demuse@du.edu"
 
+
 """
+
 Todo:
+
+    [Organized HIGH to LOW priority...]
 
     Add Reset Button - DONE / ADDED MAIN MENU INSTEAD
     Add Win Function - DONE
@@ -14,9 +17,10 @@ Todo:
     Remove Redundant Code & Optimize - 
     Create a Button Class - 
     Center Text in Rects - DONE
-    Add Leaderboard - 
+    Add Leaderboard - DONE
     Add Permutor to create a unique board each time through isomorphism classes of hardcoded boards - DONE
     Fix Score (Repeatedly inputting correct answers increases score)/[FIX - score can only +1 once!] - DONE
+    Create Sudoku Solver (Use backtracking) - 
 
 """
 
@@ -38,8 +42,9 @@ COLOR_INACTIVE = pygame.Color(156,156,156)
 COLOR_ACTIVE = pygame.Color(255,255,255)
 COLOR_TAKEN = pygame.Color(255,89,89)
 ALLOWED = ['1','2','3','4','5','6','7','8','9']
-FONT = pygame.font.Font("Roboto-Medium.ttf", 32)
-FONT_SMALL = pygame.font.Font("Roboto-Medium.ttf", 16)
+FONT = pygame.font.Font("font/Roboto-Medium.ttf", 32)
+FONT_SMALL = pygame.font.Font("font/Roboto-Medium.ttf", 16)
+
 
 # Predefined Sudoku game boars
 def initialboard(difficulty: int = 3) -> List:
@@ -89,8 +94,8 @@ def isomorphic_board(board: List) -> List:
     permute_symbols = numpy.random.permutation(9)
     row_permutations = [numpy.random.permutation(range(3*i,3*(i+1))) for i in range(3)]
     col_permutations = [numpy.random.permutation(range(3*i,3*(i+1))) for i in range(3)]
-    # block_permutation = numpy.random.permutation(range(3))
-    # stack_permutation = numpy.random.permutation(range(3))
+    #block_permutation = numpy.random.permutation(range(3))
+    #stack_permutation = numpy.random.permutation(range(3))
     for entry in board:
         pos = entry[0]
         val = entry[1]
@@ -102,7 +107,7 @@ def isomorphic_board(board: List) -> List:
 
 
 # Create number boxes and user input boxes based on the initial board chosen
-def create_board(taken_positions,number_boxes,input_boxes,board,difficulty):
+def create_board(taken_positions: List, number_boxes: List, input_boxes: List, board: List, difficulty: int) -> None:
     init_board = initialboard(difficulty)
     for position in init_board:
         pos = position[0]
@@ -137,7 +142,7 @@ def borders(screen):
 # Check whether the board has Sudoku Properties
 #   1) Whole Board is Latin Square
 #   2) Each subsquare has a distinct entries
-def win(board):
+def win(board: List) -> bool:
     comp = numpy.array(list(range(1,10)))
     # Latin Square Check
     for i in range(9):
@@ -283,21 +288,25 @@ class TextBox(MessageBox):
     def draw(self, screen):
         super().__draw__(screen)
 
+
 # Message to indicate whether the board is properly completed
 class WinBox(MessageBox):
 
     def __init__(self, x, y, w, h, text='',font=FONT_SMALL):
         super().__init__(x,y,w,h,text,font)
+        self.win = False
 
     def update(self,board):
         if win(board):
             self.text="You Win!"
+            self.win = True
         else:
             self.text="Not done"
         self.txt_surface = self.font.render(self.text, True, self.color)
 
     def draw(self, screen):
         super().__draw__(screen)
+
 
 class ScoreBox(MessageBox):
     def __init__(self, x, y, w, h, text='',font=FONT_SMALL):
@@ -310,9 +319,11 @@ class ScoreBox(MessageBox):
     def draw(self, screen):
         super().__draw__(screen)
 
+
 def text_objects(text, font):
     textSurface = font.render(text, True, pygame.Color(0,0,0))
     return textSurface, textSurface.get_rect()
+
 
 def button(msg,x,y,w,h,ic,ac,action=None):
     mouse = pygame.mouse.get_pos()
@@ -327,6 +338,46 @@ def button(msg,x,y,w,h,ic,ac,action=None):
     textSurf, textRect = text_objects(msg, FONT_SMALL)
     textRect.center = ( (x+int(w/2)), (y+int(h/2)) )
     screen.blit(textSurf, textRect)
+
+# Get the list of Highscores from the file.
+def get_highscores():
+    scores = []
+    scoreBoxes = []
+    with open('data/highscores.txt') as f:
+        scores = f.readlines()
+        scores = sorted([int(score.rstrip()) for score in scores],reverse=True)
+        f.close()
+    space = 10
+    height = 20
+    i = 0
+    for score in scores:
+        scoreBoxes.append(MessageBox(200,330+space*i+height*(i-1),80,height,text="{}".format(score),font=FONT_SMALL))
+        i += 1
+    return scoreBoxes
+
+# Update the highscores.txt file
+def update_leaderboard(new_score: int) -> None:
+    scores = []
+    with open('highscores.txt') as f:
+        scores = f.readlines()
+        scores = sorted([int(score.rstrip()) for score in scores],reverse=True)
+        f.close()
+    if len(scores) != 0:
+        i = 0
+        if new_score <= scores[i]:
+            return
+        while new_score > scores[i]:
+            i += 1
+        if i > 0:
+            for j in range(i):
+                scores[j] = scores[j+1]
+            scores[i] = new_score
+        with open('highscores.txt','w') as f:
+            f.seek(0)
+            f.truncate()
+            for score in scores:
+                f.write("{}\n".format(score))
+            f.close()
 
 # Returns lexicographic first place two matrices not equal
 def matrix_not_equal(A,B):
@@ -357,9 +408,13 @@ def menu():
                 button("1",140,200,40,50,COLOR_INACTIVE,COLOR_ACTIVE,action=main)
                 button("2",220,200,40,50,COLOR_INACTIVE,COLOR_ACTIVE,action=main)
                 button("3",300,200,40,50,COLOR_INACTIVE,COLOR_ACTIVE,action=main)
+                highscores = MessageBox(165,270,150,30,text="Highscores",font=FONT_SMALL)
+                scoreBoxes = get_highscores()
+                for scoreBox in scoreBoxes:
+                    scoreBox.__draw__(screen)
+                highscores.__draw__(screen)
                 pygame.display.update()
                 clock.tick(40)
-                screen.fill((0, 0, 0))
     return
 
 def main(difficulty):
@@ -443,10 +498,17 @@ def main(difficulty):
         resetbox1.update(board)
         resetbox1.draw(screen)
 
+        # Edit Leaderboard
+        if resetbox1.win:
+            new_score = int(resetbox1.text)
+            update_leaderboard(new_score)
+
         borders(screen)
 
         pygame.display.update()
         clock.tick(40)
+    screen.fill((0, 0, 0))
+    pygame.display.update()
 
 if __name__ == '__main__':
     menu()
