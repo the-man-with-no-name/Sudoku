@@ -8,14 +8,15 @@ Todo:
 
     Add Reset Button - DONE / ADDED MAIN MENU INSTEAD
     Add Win Function - DONE
-    Organize in Functions better
+    Organize in Functions better - 
     Add checker to see if input is a number / if not, display a message and set text = '' - DONE
     Add Score Option - DONE
-    Remove Redundant Code & Optimize
-    Create a Button Class 
+    Remove Redundant Code & Optimize - 
+    Create a Button Class - 
     Center Text in Rects - DONE
-    Add Leaderboard
-    Add Permutor to create a unique board each time through isomorphism classes of hardcoded boards
+    Add Leaderboard - 
+    Add Permutor to create a unique board each time through isomorphism classes of hardcoded boards - DONE
+    Fix Score (Repeatedly inputting correct answers increases score)/[FIX - score can only +1 once!] - DONE
 
 """
 
@@ -43,16 +44,16 @@ FONT_SMALL = pygame.font.Font("Roboto-Medium.ttf", 16)
 # Predefined Sudoku game boars
 def initialboard(difficulty: int = 3) -> List:
     if difficulty == 1:
-        easy_1 = [[(0,0),9],[(0,1),1],
-                    [(1,1),3],[(1,4),9],[(1,5),1],[(1,7),2],
-                    [(2,1),6],[(2,2),5],[(2,3),4],[(2,6),3],[(2,7),7],
-                    [(3,0),1],[(3,2),8],[(3,5),6],[(3,7),9],[(3,8),7],
-                    [(4,3),7],[(4,5),8],
-                    [(5,0),4],[(5,1),7],[(5,3),2],[(5,6),5],[(5,8),8],
-                    [(6,2),6],[(6,3),1],[(6,5),5],[(6,6),9],
-                    [(7,1),8],[(7,3),9],[(7,4),7],[(7,7),3],
-                    [(8,7),8],[(8,8),1]]
-        return easy_1
+        easy_1 = [[(0,1),1],[(0,3),9],[(0,4),4],[(0,7),6],
+                    [(1,1),2],[(1,3),7],[(1,5),6],[(1,6),1],[(1,8),3],
+                    [(2,0),6],[(2,2),9],[(2,3),1],[(2,6),7],[(2,8),4],
+                    [(3,2),7],[(3,3),4],
+                    [(4,0),4],[(4,2),3],[(4,6),8],[(4,8),9],
+                    [(5,5),8],[(5,6),4],
+                    [(6,0),9],[(6,2),6],[(6,5),4],[(6,6),2],[(6,8),7],
+                    [(7,0),2],[(7,2),1],[(7,3),6],[(7,5),5],[(7,7),3],
+                    [(8,1),7],[(8,4),2],[(8,5),9],[(8,7),4]]
+        return isomorphic_board(easy_1)
     elif difficulty == 2:
         med_1 = [[(0,0),6],[(0,1),4],[(0,3),9],
                     [(1,5),1],[(1,6),3],
@@ -63,7 +64,7 @@ def initialboard(difficulty: int = 3) -> List:
                     [(6,5),8],
                     [(7,7),9],[(7,8),7],
                     [(8,0),2],[(8,1),7],[(8,2),9],[(8,7),6],[(8,8),4]]
-        return med_1
+        return isomorphic_board(med_1)
     elif difficulty == 3:
         hard_1 = [[(0,3),4],
                     [(1,5),8],[(1,7),9],[(1,8),6],
@@ -74,10 +75,31 @@ def initialboard(difficulty: int = 3) -> List:
                     [(6,0),4],[(6,3),1],[(6,6),7],
                     [(7,1),8],[(7,3),9],[(7,6),4],
                     [(8,1),1],[(8,4),7],[(8,7),2]]
-        return hard_1
+        return isomorphic_board(hard_1)
     else:
         return easy_1
     return hard_1
+
+
+# Creates an isomorphic sudoku board
+# Only symbol, row, column permutations implemented
+#   TODO: Implement block and stack permutations
+def isomorphic_board(board: List) -> List:
+    iso_board = []
+    permute_symbols = numpy.random.permutation(9)
+    row_permutations = [numpy.random.permutation(range(3*i,3*(i+1))) for i in range(3)]
+    col_permutations = [numpy.random.permutation(range(3*i,3*(i+1))) for i in range(3)]
+    # block_permutation = numpy.random.permutation(range(3))
+    # stack_permutation = numpy.random.permutation(range(3))
+    for entry in board:
+        pos = entry[0]
+        val = entry[1]
+        r_perm = row_permutations[pos[0]//3]
+        c_perm = col_permutations[pos[1]//3]
+        iso_board.append([(r_perm.item(pos[0]%3),c_perm.item(pos[1]%3)),permute_symbols.item(val-1)+1])
+    return iso_board
+
+
 
 # Create number boxes and user input boxes based on the initial board chosen
 def create_board(taken_positions,number_boxes,input_boxes,board,difficulty):
@@ -306,6 +328,19 @@ def button(msg,x,y,w,h,ic,ac,action=None):
     textRect.center = ( (x+int(w/2)), (y+int(h/2)) )
     screen.blit(textSurf, textRect)
 
+# Returns lexicographic first place two matrices not equal
+def matrix_not_equal(A,B):
+    row = -1
+    col = -1
+    (nrows,ncols) = A.shape
+    for i in range(nrows):
+        if not numpy.array_equal(A,B):
+            row = i
+    for j in range(ncols):
+        if not numpy.array_equal(A,B):
+            col = j
+    return (row,col)
+
 
 def menu():
     intro = True
@@ -324,15 +359,19 @@ def menu():
                 button("3",300,200,40,50,COLOR_INACTIVE,COLOR_ACTIVE,action=main)
                 pygame.display.update()
                 clock.tick(40)
+                screen.fill((0, 0, 0))
     return
 
 def main(difficulty):
     # Initialize board components
     board = numpy.zeros((9,9),dtype=int)
     Taken = numpy.zeros((9,9),dtype=bool)
+    lastlastboard = numpy.zeros((9,9),dtype=int)
+    lastboard = numpy.zeros((9,9),dtype=int)
     number_boxes = []
     taken_positions = []
     input_boxes = []
+    changed_up_one = numpy.zeros((9,9),dtype=bool)
     create_board(taken_positions,number_boxes,input_boxes,board,difficulty)
 
     # Create Progress Messages
@@ -343,7 +382,8 @@ def main(difficulty):
     # Run until user asks to quit
     running = True 
     while running:
-
+        # if not numpy.array_equal(board,lastboard):
+        #     lastlastboard = numpy.copy(lastboard)
         lastboard = numpy.copy(board)
         change_to_zero = False
 
@@ -385,10 +425,15 @@ def main(difficulty):
 
         if numpy.array_equal(lastboard,board):
             scorebox1.update(0)
-        elif (not numpy.array_equal(lastboard,board)) and (not Hint) and (not change_to_zero):
-            scorebox1.update(1)
-        elif (not numpy.array_equal(lastboard,board)) and (Hint) and (not change_to_zero):
-            scorebox1.update(-1)
+        elif (not numpy.array_equal(lastboard,board)) and (not change_to_zero):
+            (r,c) = matrix_not_equal(lastboard,board)
+            if (not Hint) and (not changed_up_one.item(r,c)):
+                scorebox1.update(1)
+                changed_up_one[r,c] = True
+            elif Hint:
+                scorebox1.update(-1)
+            else:
+                scorebox1.update(0)
         else:
             scorebox1.update(0)
 
@@ -397,11 +442,10 @@ def main(difficulty):
         # Indicate to user whether game is finished
         resetbox1.update(board)
         resetbox1.draw(screen)
-        
 
         borders(screen)
 
-        pygame.display.flip()
+        pygame.display.update()
         clock.tick(40)
 
 if __name__ == '__main__':
