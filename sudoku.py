@@ -20,7 +20,7 @@ Todo:
     Add Leaderboard - DONE
     Add Permutor to create a unique board each time through isomorphism classes of hardcoded boards - DONE
     Fix Score (Repeatedly inputting correct answers increases score)/[FIX - score can only +1 once!] - DONE
-    Create Sudoku Solver (Use backtracking) - 
+    Create Sudoku Solver (Use backtracking) - DONE
 
 """
 
@@ -179,6 +179,28 @@ def isTaken(coord: tuple, num: int, board) -> bool:
             for j in range(starty*3,starty*3+3,1):
                 if board.item(i,j) == num and coord[0] != i and coord[1] != j:
                     return True
+    return False
+
+
+def find_first_empty_location(sboard) -> bool:
+    for r in range(9):
+        for c in range(9):
+            if sboard.item(r,c) == 0:
+                return (r,c)
+    return (-1,-1)
+
+# Solve Sudoku by backtracking
+def sudoku_backtracking_solver(sboard) -> bool:
+    loc = find_first_empty_location(sboard)
+    if loc[0] == loc[1] == -1:
+        return True
+    (row,col) = loc
+    for number in range(1,10):
+        if not isTaken((row,col),number,sboard):
+            sboard[row,col] = number
+            if sudoku_backtracking_solver(sboard):
+                return True
+            sboard[row,col] = 0
     return False
 
 
@@ -385,10 +407,10 @@ def matrix_not_equal(A,B):
     col = -1
     (nrows,ncols) = A.shape
     for i in range(nrows):
-        if not numpy.array_equal(A,B):
+        if not numpy.array_equal(A[i],B[i]):
             row = i
     for j in range(ncols):
-        if not numpy.array_equal(A,B):
+        if not numpy.array_equal(A[:,j],B[:,j]):
             col = j
     return (row,col)
 
@@ -421,13 +443,18 @@ def main(difficulty):
     # Initialize board components
     board = numpy.zeros((9,9),dtype=int)
     Taken = numpy.zeros((9,9),dtype=bool)
-    lastlastboard = numpy.zeros((9,9),dtype=int)
+    # lastlastboard = numpy.zeros((9,9),dtype=int)
     lastboard = numpy.zeros((9,9),dtype=int)
     number_boxes = []
     taken_positions = []
     input_boxes = []
     changed_up_one = numpy.zeros((9,9),dtype=bool)
     create_board(taken_positions,number_boxes,input_boxes,board,difficulty)
+    # Solve board first
+    # sboard = numpy.copy(board)
+    # print(board)
+    # sudoku_backtracking_solver(sboard)
+    # print(sboard)
 
     # Create Progress Messages
     resetbox1 = WinBox(left,top+310,150,40,text='Not done',font=FONT)
@@ -484,6 +511,7 @@ def main(difficulty):
             (r,c) = matrix_not_equal(lastboard,board)
             if (not Hint) and (not changed_up_one.item(r,c)):
                 scorebox1.update(1)
+                # Only allow a box to increase the score once
                 changed_up_one[r,c] = True
             elif Hint:
                 scorebox1.update(-1)
