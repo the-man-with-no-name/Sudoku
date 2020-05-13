@@ -26,6 +26,7 @@ Todo:
 
 # Modules required
 import pygame
+import pkgutil
 import time
 import numpy
 from typing import List
@@ -268,7 +269,6 @@ class NumBox:
         self.board_coordinates = board_coordinates
         self.value = value
         self.txt_surface = FONT.render(text, True, self.color)
-        #screen.blit(self.txt_surface, (self.rect.x+6, self.rect.y-2))
 
     def draw(self, screen):
         surf = self.txt_surface.get_rect()
@@ -286,7 +286,6 @@ class MessageBox:
         self.hint = 0
         self.font = font
         self.txt_surface = font.render(text, True, self.color)
-        #screen.blit(self.txt_surface, (self.rect.x+6, self.rect.y-2))
 
     def __draw__(self, screen):
         surf = self.txt_surface.get_rect()
@@ -361,7 +360,7 @@ def button(msg,x,y,w,h,ic,ac,action=None):
     textRect.center = ( (x+int(w/2)), (y+int(h/2)) )
     screen.blit(textSurf, textRect)
 
-# Get the list of Highscores from the file.
+# Get the list of Highscores from the file: highscores.txt
 def get_highscores():
     scores = []
     scoreBoxes = []
@@ -380,7 +379,7 @@ def get_highscores():
 # Update the highscores.txt file
 def update_leaderboard(new_score: int) -> None:
     scores = []
-    with open('highscores.txt') as f:
+    with open('data/highscores.txt') as f:
         scores = f.readlines()
         scores = sorted([int(score.rstrip()) for score in scores],reverse=True)
         f.close()
@@ -394,28 +393,49 @@ def update_leaderboard(new_score: int) -> None:
             for j in range(i):
                 scores[j] = scores[j+1]
             scores[i] = new_score
-        with open('highscores.txt','w') as f:
+        with open('data/highscores.txt','w') as f:
             f.seek(0)
             f.truncate()
             for score in scores:
                 f.write("{}\n".format(score))
             f.close()
 
-# Returns lexicographic first place two matrices not equal
+# Update user score
+def update_score(lastboard,board,Hint,change_to_zero,changed_up_one,scorebox1,screen):
+    if numpy.array_equal(lastboard,board):
+        scorebox1.update(0)
+    elif (not numpy.array_equal(lastboard,board)) and (not change_to_zero):
+        (r,c) = matrix_not_equal(lastboard,board)
+        if (not Hint) and (not changed_up_one.item(r,c)):
+            scorebox1.update(1)
+            # Only allow a box to increase the score once
+            changed_up_one[r,c] = True
+        elif Hint:
+            scorebox1.update(-1)
+        else:
+            scorebox1.update(0)
+    else:
+        scorebox1.update(0)
+    scorebox1.draw(screen)
+
+# Returns lexicographic first place two matrices not equal if the matrices are the same shape
 def matrix_not_equal(A,B):
     row = -1
     col = -1
-    (nrows,ncols) = A.shape
-    for i in range(nrows):
-        if not numpy.array_equal(A[i],B[i]):
-            row = i
-    for j in range(ncols):
-        if not numpy.array_equal(A[:,j],B[:,j]):
-            col = j
-    return (row,col)
+    if A.shape == B.shape:
+        (nrows,ncols) = A.shape
+        for i in range(nrows):
+            if not numpy.array_equal(A[i],B[i]):
+                row = i
+        for j in range(ncols):
+            if not numpy.array_equal(A[:,j],B[:,j]):
+                col = j
+        return (row,col)
+    else:
+        return (row,col)
 
 
-def menu():
+def main():
     intro = True
     while intro:
         for event in pygame.event.get():
@@ -427,9 +447,9 @@ def menu():
                 sudoku.__draw__(screen)
                 selectdiff = MessageBox(165,150,150,30,text="Select Difficulty",font=FONT_SMALL)
                 selectdiff.__draw__(screen)
-                button("1",140,200,40,50,COLOR_INACTIVE,COLOR_ACTIVE,action=main)
-                button("2",220,200,40,50,COLOR_INACTIVE,COLOR_ACTIVE,action=main)
-                button("3",300,200,40,50,COLOR_INACTIVE,COLOR_ACTIVE,action=main)
+                button("1",140,200,40,50,COLOR_INACTIVE,COLOR_ACTIVE,action=game)
+                button("2",220,200,40,50,COLOR_INACTIVE,COLOR_ACTIVE,action=game)
+                button("3",300,200,40,50,COLOR_INACTIVE,COLOR_ACTIVE,action=game)
                 highscores = MessageBox(165,270,150,30,text="Highscores",font=FONT_SMALL)
                 scoreBoxes = get_highscores()
                 for scoreBox in scoreBoxes:
@@ -439,7 +459,7 @@ def menu():
                 clock.tick(40)
     return
 
-def main(difficulty):
+def game(difficulty):
     # Initialize board components
     board = numpy.zeros((9,9),dtype=int)
     Taken = numpy.zeros((9,9),dtype=bool)
@@ -464,8 +484,6 @@ def main(difficulty):
     # Run until user asks to quit
     running = True 
     while running:
-        # if not numpy.array_equal(board,lastboard):
-        #     lastlastboard = numpy.copy(lastboard)
         lastboard = numpy.copy(board)
         change_to_zero = False
 
@@ -496,37 +514,24 @@ def main(difficulty):
             box.draw(screen)
 
         # Are there any invalid moves on the board?
-        Hint = False
-        for i in range(9):
-            for j in range(9):
-                Hint = Hint or Taken.item(i,j)
+        Hint = numpy.any(Taken)
+        # Hint = False
+        # for i in range(9):
+        #     for j in range(9):
+        #         Hint = Hint or Taken.item(i,j)
 
-        # Indicate to user whether the move was invalid
+        # Update Hint Message
         hintbox1.update(Hint)
         hintbox1.draw(screen)
 
-        if numpy.array_equal(lastboard,board):
-            scorebox1.update(0)
-        elif (not numpy.array_equal(lastboard,board)) and (not change_to_zero):
-            (r,c) = matrix_not_equal(lastboard,board)
-            if (not Hint) and (not changed_up_one.item(r,c)):
-                scorebox1.update(1)
-                # Only allow a box to increase the score once
-                changed_up_one[r,c] = True
-            elif Hint:
-                scorebox1.update(-1)
-            else:
-                scorebox1.update(0)
-        else:
-            scorebox1.update(0)
-
-        scorebox1.draw(screen)
+        # Update user score
+        update_score(lastboard,board,Hint,change_to_zero,changed_up_one,scorebox1,screen)
 
         # Indicate to user whether game is finished
         resetbox1.update(board)
         resetbox1.draw(screen)
 
-        # Edit Leaderboard
+        # Edit highscores if user won and score merits leaderboard
         if resetbox1.win:
             new_score = int(resetbox1.text)
             update_leaderboard(new_score)
@@ -538,7 +543,5 @@ def main(difficulty):
     screen.fill((0, 0, 0))
     pygame.display.update()
 
-if __name__ == '__main__':
-    menu()
-    #main()
-    pygame.quit()
+# if __name__ == '__main__':
+#     main()
