@@ -19,14 +19,13 @@ Todo:
     Center Text in Rects - DONE
     Add Leaderboard - DONE
     Add Permutor to create a unique board each time through isomorphism classes of hardcoded boards - DONE
-    Fix Score (Repeatedly inputting correct answers increases score)/[FIX - score can only +1 once!] - DONE
+    Fix Score (Repeatedly inputting correct answers increases score)/[FIX - score can only +1 once per square!] - DONE
     Create Sudoku Solver (Use backtracking) - DONE
 
 """
 
 # Modules required
 import pygame
-import pkgutil
 import time
 import numpy
 from typing import List
@@ -387,12 +386,12 @@ def update_leaderboard(new_score: int) -> None:
         i = 0
         if new_score <= scores[i]:
             return
-        while new_score > scores[i]:
+        while new_score > scores[i] and i < len(scores)-1:
             i += 1
         if i > 0:
             for j in range(i):
                 scores[j] = scores[j+1]
-            scores[i] = new_score
+            scores[i-1] = new_score
         with open('data/highscores.txt','w') as f:
             f.seek(0)
             f.truncate()
@@ -470,7 +469,7 @@ def game(difficulty):
     input_boxes = []
     changed_up_one = numpy.zeros((9,9),dtype=bool)
     create_board(taken_positions,number_boxes,input_boxes,board,difficulty)
-    # Solve board first
+    #Solve board first
     # sboard = numpy.copy(board)
     # print(board)
     # sudoku_backtracking_solver(sboard)
@@ -533,7 +532,7 @@ def game(difficulty):
 
         # Edit highscores if user won and score merits leaderboard
         if resetbox1.win:
-            new_score = int(resetbox1.text)
+            new_score = int(scorebox1.text)
             update_leaderboard(new_score)
 
         borders(screen)
