@@ -2,28 +2,6 @@ __author__ = "Ryan DeMuse"
 __license__ = "MIT"
 __email__ = "ryan.demuse@du.edu"
 
-
-"""
-
-Todo:
-
-    [Organized HIGH to LOW priority...]
-
-    Add Reset Button - DONE / ADDED MAIN MENU INSTEAD
-    Add Win Function - DONE
-    Organize in Functions better - 
-    Add checker to see if input is a number / if not, display a message and set text = '' - DONE
-    Add Score Option - DONE
-    Remove Redundant Code & Optimize - 
-    Create a Button Class - 
-    Center Text in Rects - DONE
-    Add Leaderboard - DONE
-    Add Permutor to create a unique board each time through isomorphism classes of hardcoded boards - DONE
-    Fix Score (Repeatedly inputting correct answers increases score)/[FIX - score can only +1 once per square!] - DONE
-    Create Sudoku Solver (Use backtracking) - DONE
-
-"""
-
 # Modules required
 import pygame
 import time
@@ -161,7 +139,7 @@ def win(board: List) -> bool:
 
 # Is this a valid number placement, i.e., does it maintain the Latin Square
 #   property and the subsquare property?
-def isTaken(coord: tuple, num: int, board) -> bool:
+def is_taken(coord: tuple, num: int, board) -> bool:
     # 0's are default values, do not check them
     if num != 0:
         # Latin Square rows
@@ -196,7 +174,7 @@ def sudoku_backtracking_solver(sboard) -> bool:
         return True
     (row,col) = loc
     for number in range(1,10):
-        if not isTaken((row,col),number,sboard):
+        if not is_taken((row,col),number,sboard):
             sboard[row,col] = number
             if sudoku_backtracking_solver(sboard):
                 return True
@@ -218,7 +196,6 @@ class InputBox:
         self.max_string_length = max_string_length # set to -1 for no limit
         self.board_coordinates = board_coordinates
         self.value = 0
-        #screen.blit(self.txt_surface, (self.rect.x+6, self.rect.y-2))
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -246,12 +223,6 @@ class InputBox:
 
     def get_attr(self):
         return (self.board_coordinates,self.value)
-
-    # def update(self,taken):
-    #     if taken:
-    #         self.color = COLOR_TAKEN
-    #     else:
-    #         self.color = COLOR_INACTIVE
 
     def draw(self, screen):
         screen.blit(self.txt_surface, (self.rect.x+6, self.rect.y-2))
@@ -469,11 +440,6 @@ def game(difficulty):
     input_boxes = []
     changed_up_one = numpy.zeros((9,9),dtype=bool)
     create_board(taken_positions,number_boxes,input_boxes,board,difficulty)
-    #Solve board first
-    # sboard = numpy.copy(board)
-    # print(board)
-    # sudoku_backtracking_solver(sboard)
-    # print(sboard)
 
     # Create Progress Messages
     resetbox1 = WinBox(left,top+310,150,40,text='Not done',font=FONT)
@@ -499,7 +465,7 @@ def game(difficulty):
             board[coord[0],coord[1]] = number
             if lastboard[coord[0],coord[1]] != 0 and number == 0:
                 change_to_zero = True
-            toggle = isTaken(coord,number,board)
+            toggle = is_taken(coord,number,board)
             if toggle:
                 Taken[coord[0],coord[1]] = True
             else:
@@ -514,10 +480,6 @@ def game(difficulty):
 
         # Are there any invalid moves on the board?
         Hint = numpy.any(Taken)
-        # Hint = False
-        # for i in range(9):
-        #     for j in range(9):
-        #         Hint = Hint or Taken.item(i,j)
 
         # Update Hint Message
         hintbox1.update(Hint)
@@ -541,6 +503,3 @@ def game(difficulty):
         clock.tick(40)
     screen.fill((0, 0, 0))
     pygame.display.update()
-
-# if __name__ == '__main__':
-#     main()
