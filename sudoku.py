@@ -2,6 +2,18 @@ __author__ = "Ryan DeMuse"
 __license__ = "MIT"
 __email__ = "ryan.demuse@du.edu"
 
+
+"""
+
+Todo:
+
+    [Organized HIGH to LOW priority...]
+
+    Organize in Functions better - 
+    Remove Redundant Code & Optimize - 
+
+"""
+
 # Modules required
 import pygame
 import time
@@ -302,9 +314,11 @@ class WinBox(MessageBox):
 class ScoreBox(MessageBox):
     def __init__(self, x, y, w, h, text='',font=FONT_SMALL):
         super().__init__(x,y,w,h,text,font)
+        self.value = 0
 
     def update(self,move):
-        self.text = str(int(self.text)+move)
+        self.value += move
+        self.text = str(self.value)
         self.txt_surface = self.font.render(self.text, True, self.color)
 
     def draw(self, screen):
@@ -351,8 +365,9 @@ def update_leaderboard(new_score: int) -> None:
     scores = []
     with open('data/highscores.txt') as f:
         scores = f.readlines()
-        scores = sorted([int(score.rstrip()) for score in scores],reverse=True)
+        scores = sorted([int(score.rstrip()) for score in scores])
         f.close()
+    print(scores)
     if len(scores) != 0:
         i = 0
         if new_score <= scores[i]:
@@ -364,8 +379,10 @@ def update_leaderboard(new_score: int) -> None:
                 scores[j] = scores[j+1]
             scores[i-1] = new_score
         with open('data/highscores.txt','w') as f:
+            scores = sorted(scores,reverse=True)
             f.seek(0)
             f.truncate()
+            print(scores)
             for score in scores:
                 f.write("{}\n".format(score))
             f.close()
