@@ -298,6 +298,7 @@ class WinBox(MessageBox):
     def __init__(self, x, y, w, h, text='',font=FONT_SMALL):
         super().__init__(x,y,w,h,text,font)
         self.win = False
+        self.score_changed = False
 
     def update(self,board):
         if win(board):
@@ -367,7 +368,6 @@ def update_leaderboard(new_score: int) -> None:
         scores = f.readlines()
         scores = sorted([int(score.rstrip()) for score in scores])
         f.close()
-    print(scores)
     if len(scores) != 0:
         i = 0
         if new_score <= scores[i]:
@@ -382,7 +382,6 @@ def update_leaderboard(new_score: int) -> None:
             scores = sorted(scores,reverse=True)
             f.seek(0)
             f.truncate()
-            print(scores)
             for score in scores:
                 f.write("{}\n".format(score))
             f.close()
@@ -457,6 +456,9 @@ def game(difficulty):
     input_boxes = []
     changed_up_one = numpy.zeros((9,9),dtype=bool)
     create_board(taken_positions,number_boxes,input_boxes,board,difficulty)
+    sboard = numpy.copy(board)
+    sudoku_backtracking_solver(sboard)
+    print(sboard)
 
     # Create Progress Messages
     resetbox1 = WinBox(left,top+310,150,40,text='Not done',font=FONT)
@@ -510,9 +512,10 @@ def game(difficulty):
         resetbox1.draw(screen)
 
         # Edit highscores if user won and score merits leaderboard
-        if resetbox1.win:
+        if resetbox1.win and not resetbox1.score_changed:
             new_score = int(scorebox1.text)
             update_leaderboard(new_score)
+            resetbox1.score_changed = True
 
         borders(screen)
 
